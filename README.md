@@ -2,6 +2,10 @@
 
 A clean, responsive, and minimalist book list web application built with vanilla HTML, CSS, and JavaScript. All data is persisted directly in the browser using `localStorage`—no backend, server, or database required.
 
+## Live Demo
+
+🚀 **Experience the app online:** [https://simonui-collab.github.io/booklist/](https://simonui-collab.github.io/booklist/)
+
 ## Features
 
 - **Add New Books**: Easily add books with Title, Author, and Read status.
@@ -30,3 +34,4 @@ git clone https://github.com/SimonUI-collab/booklist.git
 - **HTML5**: Semantic, accessible markup.
 - **CSS3**: Modern CSS variables, responsive flexbox/grid layout, mobile touch targets.
 - **JavaScript (ES6+)**: Pure vanilla JS with `localStorage` persistence.
+
