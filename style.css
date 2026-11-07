@@ -29,6 +29,11 @@
   --unread-badge-text: #b45309;
   --unread-badge-border: #fcd34d;
 
+  /* Star Rating */
+  --star-filled: #f59e0b;
+  --star-hover: #d97706;
+  --star-empty: #cbd5e1;
+
   /* Danger Actions */
   --danger: #ef4444;
   --danger-hover: #dc2626;
@@ -282,6 +287,67 @@ input[type="text"]::placeholder {
   outline-offset: 2px;
 }
 
+/* Secondary Form Row (Rating & Read status) */
+.form-secondary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background-color: var(--surface-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.rating-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rating-form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.star-rating-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.star-picker-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.55rem;
+  line-height: 1;
+  color: var(--star-empty);
+  cursor: pointer;
+  padding: 2px 3px;
+  transition: transform var(--transition-quick), color var(--transition-quick);
+  user-select: none;
+}
+
+.star-picker-btn:hover {
+  transform: scale(1.2);
+}
+
+.star-picker-btn.filled {
+  color: var(--star-filled);
+}
+
+.rating-label-display {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
 /* Form Action Layout */
 .form-actions {
   display: flex;
@@ -472,6 +538,46 @@ input[type="text"]::placeholder {
   font-size: 0.9rem;
   color: var(--text-muted);
   word-break: break-word;
+}
+
+.book-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.card-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.card-star-btn {
+  background: transparent;
+  border: none;
+  padding: 0 1px;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--star-empty);
+  cursor: pointer;
+  transition: transform var(--transition-quick), color var(--transition-quick);
+}
+
+.card-star-btn.filled {
+  color: var(--star-filled);
+}
+
+.card-star-btn:hover {
+  transform: scale(1.25);
+}
+
+.card-stars-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 4px;
 }
 
 /* Status Badges */
@@ -695,6 +801,12 @@ input[type="text"]::placeholder {
 
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .form-secondary-row {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
 

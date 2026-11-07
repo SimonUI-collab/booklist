@@ -23,6 +23,9 @@
   const bookTitleInput = document.getElementById('bookTitle');
   const bookAuthorInput = document.getElementById('bookAuthor');
   const bookStatusInput = document.getElementById('bookStatus');
+  const bookRatingInput = document.getElementById('bookRating');
+  const addStarPicker = document.getElementById('addStarPicker');
+  const addRatingDisplay = document.getElementById('addRatingDisplay');
 
   // Search & List
   const searchInput = document.getElementById('searchInput');
@@ -43,6 +46,9 @@
   const editTitleInput = document.getElementById('editTitle');
   const editAuthorInput = document.getElementById('editAuthor');
   const editStatusInput = document.getElementById('editStatus');
+  const editRatingInput = document.getElementById('editRating');
+  const editStarPicker = document.getElementById('editStarPicker');
+  const editRatingDisplay = document.getElementById('editRatingDisplay');
   const closeEditModalBtn = document.getElementById('closeEditModalBtn');
   const cancelEditBtn = document.getElementById('cancelEditBtn');
 
@@ -61,7 +67,11 @@
   function loadBooks() {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
+      const parsed = data ? JSON.parse(data) : [];
+      return parsed.map((book) => ({
+        ...book,
+        rating: typeof book.rating === 'number' && book.rating >= 1 && book.rating <= 5 ? book.rating : 5
+      }));
     } catch (err) {
       console.error('Failed to load books from localStorage:', err);
       return [];
@@ -86,6 +96,51 @@
   function generateId() {
     return 'book_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
   }
+
+  /**
+   * Setup interactive 1-to-5 star picker controls with hover and select states
+   * @param {HTMLElement} pickerEl Star buttons container
+   * @param {HTMLInputElement} hiddenInput Hidden input holding numerical value
+   * @param {HTMLElement} displayEl Label showing text like "5 / 5"
+   */
+  function setupStarPicker(pickerEl, hiddenInput, displayEl) {
+    if (!pickerEl || !hiddenInput) return { setRating: () => {} };
+    const buttons = pickerEl.querySelectorAll('.star-picker-btn');
+
+    function updateDisplay(value) {
+      const val = Math.max(1, Math.min(5, Number(value) || 5));
+      hiddenInput.value = val;
+      if (displayEl) displayEl.textContent = `${val} / 5`;
+      buttons.forEach((btn) => {
+        const btnVal = Number(btn.dataset.value);
+        btn.classList.toggle('filled', btnVal <= val);
+      });
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const val = Number(btn.dataset.value);
+        updateDisplay(val);
+      });
+      btn.addEventListener('mouseenter', () => {
+        const val = Number(btn.dataset.value);
+        buttons.forEach((b) => {
+          b.classList.toggle('filled', Number(b.dataset.value) <= val);
+        });
+      });
+    });
+
+    pickerEl.addEventListener('mouseleave', () => {
+      updateDisplay(Number(hiddenInput.value) || 5);
+    });
+
+    updateDisplay(Number(hiddenInput.value) || 5);
+    return { setRating: updateDisplay };
+  }
+
+  // Initialize star rating pickers for Add & Edit forms
+  const addStarPickerControl = setupStarPicker(addStarPicker, bookRatingInput, addRatingDisplay);
+  const editStarPickerControl = setupStarPicker(editStarPicker, editRatingInput, editRatingDisplay);
 
   // --- Render Function ---
 
@@ -182,12 +237,47 @@
       headerRow.appendChild(titleEl);
       headerRow.appendChild(statusBtn);
 
+      // Book Meta: Author & Star Rating
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'book-meta';
+
       const authorEl = document.createElement('p');
       authorEl.className = 'book-author';
       authorEl.textContent = `by ${book.author}`;
 
+      // Star rating container with clickable stars for instant rating
+      const starsDiv = document.createElement('div');
+      starsDiv.className = 'card-stars';
+      starsDiv.setAttribute('role', 'radiogroup');
+      starsDiv.setAttribute('aria-label', `Rating: ${book.rating} of 5 stars`);
+
+      for (let s = 1; s <= 5; s++) {
+        const starBtn = document.createElement('button');
+        starBtn.type = 'button';
+        starBtn.className = `card-star-btn ${s <= book.rating ? 'filled' : ''}`;
+        starBtn.dataset.star = s;
+        starBtn.title = `Rate ${s} star${s > 1 ? 's' : ''}`;
+        starBtn.setAttribute('aria-label', `${s} star${s > 1 ? 's' : ''}`);
+        starBtn.textContent = '★';
+
+        starBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setBookRating(book.id, s);
+        });
+
+        starsDiv.appendChild(starBtn);
+      }
+
+      const scoreEl = document.createElement('span');
+      scoreEl.className = 'card-stars-score';
+      scoreEl.textContent = `${book.rating}/5`;
+      starsDiv.appendChild(scoreEl);
+
+      metaDiv.appendChild(authorEl);
+      metaDiv.appendChild(starsDiv);
+
       infoDiv.appendChild(headerRow);
-      infoDiv.appendChild(authorEl);
+      infoDiv.appendChild(metaDiv);
 
       // Book Actions Block (Edit, Delete)
       const actionsDiv = document.createElement('div');
@@ -236,6 +326,20 @@
   // --- Book Operations ---
 
   /**
+   * Set or update star rating for a book directly
+   * @param {string} id Book ID
+   * @param {number} rating Rating 1 to 5
+   */
+  function setBookRating(id, rating) {
+    const book = books.find((b) => b.id === id);
+    if (book) {
+      book.rating = Math.max(1, Math.min(5, Number(rating) || 5));
+      saveBooks();
+      render();
+    }
+  }
+
+  /**
    * Add a new book
    */
   function handleAddBook(e) {
@@ -244,6 +348,7 @@
     const title = bookTitleInput.value.trim();
     const author = bookAuthorInput.value.trim();
     const isRead = bookStatusInput.checked;
+    const rating = Math.max(1, Math.min(5, Number(bookRatingInput.value) || 5));
 
     if (!title || !author) {
       alert('Please fill in both the title and author.');
@@ -254,6 +359,7 @@
       id: generateId(),
       title,
       author,
+      rating,
       isRead,
       createdAt: Date.now()
     };
@@ -262,8 +368,9 @@
     books.unshift(newBook);
     saveBooks();
 
-    // Reset form and focus
+    // Reset form and reset rating picker to 5
     addBookForm.reset();
+    addStarPickerControl.setRating(5);
     bookTitleInput.focus();
 
     render();
@@ -294,6 +401,7 @@
     editTitleInput.value = book.title;
     editAuthorInput.value = book.author;
     editStatusInput.checked = book.isRead;
+    editStarPickerControl.setRating(book.rating || 5);
 
     editModal.hidden = false;
     editTitleInput.focus();
@@ -317,6 +425,7 @@
     const title = editTitleInput.value.trim();
     const author = editAuthorInput.value.trim();
     const isRead = editStatusInput.checked;
+    const rating = Math.max(1, Math.min(5, Number(editRatingInput.value) || 5));
 
     if (!title || !author) {
       alert('Title and Author cannot be empty.');
@@ -328,6 +437,7 @@
       book.title = title;
       book.author = author;
       book.isRead = isRead;
+      book.rating = rating;
       saveBooks();
       closeEditModal();
       render();
@@ -386,6 +496,7 @@
         id: generateId(),
         title: 'To Kill a Mockingbird',
         author: 'Harper Lee',
+        rating: 5,
         isRead: true,
         createdAt: Date.now() - 3000
       },
@@ -393,6 +504,7 @@
         id: generateId(),
         title: '1984',
         author: 'George Orwell',
+        rating: 5,
         isRead: true,
         createdAt: Date.now() - 2000
       },
@@ -400,6 +512,7 @@
         id: generateId(),
         title: 'The Great Gatsby',
         author: 'F. Scott Fitzgerald',
+        rating: 4,
         isRead: false,
         createdAt: Date.now() - 1000
       },
@@ -407,6 +520,7 @@
         id: generateId(),
         title: 'Atomic Habits',
         author: 'James Clear',
+        rating: 5,
         isRead: false,
         createdAt: Date.now()
       }
